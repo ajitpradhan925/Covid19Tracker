@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Covid19Tracker</string>
+    <string name="header_title">Covid-19 Status Checker</string>
+</resources>
