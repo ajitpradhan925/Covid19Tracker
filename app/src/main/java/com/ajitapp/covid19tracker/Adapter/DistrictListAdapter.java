@@ -14,7 +14,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.ajitapp.covid19tracker.DistWiseDetailsActivity;
 import com.ajitapp.covid19tracker.R;
-import com.ajitapp.covid19tracker.StateWiseDetailsActivity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
