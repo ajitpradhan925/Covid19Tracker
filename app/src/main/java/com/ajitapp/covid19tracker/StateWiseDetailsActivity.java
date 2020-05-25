@@ -52,6 +52,8 @@ public class StateWiseDetailsActivity extends AppCompatActivity {
     DistrictListAdapter districtListAdapter;
     ArrayList<HashMap<String, String>> arrayList;
     private RecyclerView recyclerView;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

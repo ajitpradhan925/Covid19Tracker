@@ -15,6 +15,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.ajitapp.covid19tracker.Adapter.StateListAdapter;
+import com.ajitapp.covid19tracker.models.StateModels;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -31,6 +32,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 
 public class StateListActivity extends AppCompatActivity {
@@ -38,8 +40,9 @@ public class StateListActivity extends AppCompatActivity {
     private Toolbar toolbar;
     private StateListAdapter stateListAdapter;
     private MaterialSearchView materialSearchView;
-    private ArrayList<HashMap<String, String>> arrayList;
+    private List<StateModels> arrayList;
     private ProgressDialog progressDialog;
+    MaterialSearchView searchView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +51,10 @@ public class StateListActivity extends AppCompatActivity {
 
         toolbar = (Toolbar) findViewById(R.id.toolbar_state);
         setSupportActionBar(toolbar);
+
+
+        searchView = findViewById(R.id.search_view);
+
 
         getSupportActionBar().setTitle("Select a State");
 
@@ -86,23 +93,21 @@ public class StateListActivity extends AppCompatActivity {
                             JSONArray jsonArray = response.getJSONArray("statewise");
 
 
-                            for (int i =1; i < jsonArray.length(); i++) {
+                            for (int i = 1; i < jsonArray.length(); i++) {
                                 JSONObject jsonObject = jsonArray.getJSONObject(i);
 
-                                String state_name = jsonObject.getString("state");
-                                String confirm_cases = jsonObject.getString("confirmed");
+                                StateModels stateModels = new StateModels(
+                                        jsonObject.getString("state"),
+                                        jsonObject.getString("confirmed")
+                                );
 
-                                HashMap<String, String> map = new HashMap<>();
-
-                                map.put("state_name", state_name);
-                                map.put("confirm_cases", confirm_cases);
-
-                                arrayList.add(map);
+                                arrayList.add(stateModels);
 
                             }
 
 
                             stateListAdapter = new StateListAdapter(getApplicationContext(), arrayList);
+                            stateListAdapter.setHasStableIds(true);
                             recyclerView.setAdapter(stateListAdapter);
                             progressDialog.dismiss();
 
@@ -137,10 +142,27 @@ public class StateListActivity extends AppCompatActivity {
 
     }
 
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.state_toolbar, menu);
+
+        MenuItem menuItem = menu.findItem(R.id.search);
+        searchView.setMenuItem(menuItem);
+        searchView.setHint("Search Corona States By States..");
+
+        searchView.setOnQueryTextListener(new MaterialSearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                stateListAdapter.getFilter().filter(query);
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                stateListAdapter.getFilter().filter(newText);
+                return false;
+            }
+        });
         return true;
     }
 

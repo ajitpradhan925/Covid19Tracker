@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -14,18 +16,23 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.ajitapp.covid19tracker.R;
 import com.ajitapp.covid19tracker.StateWiseDetailsActivity;
+import com.ajitapp.covid19tracker.models.StateModels;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
-public class StateListAdapter extends RecyclerView.Adapter<StateListAdapter.MyViewHolder> {
+public class StateListAdapter extends RecyclerView.Adapter<StateListAdapter.MyViewHolder> implements Filterable {
 
-    private ArrayList<HashMap<String, String>> arrayList;
+    private List<StateModels> arrayList;
     Context context;
+    private List<StateModels> fullArraylist;
     int counter = 1;
-    public StateListAdapter(Context context, ArrayList<HashMap<String, String>> arrayList) {
+
+    public StateListAdapter(Context context, List<StateModels> arrayList) {
         this.arrayList = arrayList;
         this.context = context;
+        this.fullArraylist = arrayList;
     }
 
 
@@ -35,19 +42,19 @@ public class StateListAdapter extends RecyclerView.Adapter<StateListAdapter.MyVi
         View view = LayoutInflater.from(context).inflate(R.layout.state_list_item, parent, false);
 
         MyViewHolder myViewHolder = new MyViewHolder(view);
-
+        myViewHolder.counterTv.setText(String.valueOf(counter ++));
         return myViewHolder;
     }
 
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
 
-        final String state_name = arrayList.get(position).get("state_name");
-        final String confirm_cases = arrayList.get(position).get("confirm_cases");
+        final String state_name = fullArraylist.get(position).getState_name();
+        final String confirm_cases = fullArraylist.get(position).getConfirm_cases();
 
         holder.state_nameTv.setText(state_name);
         holder.confirm_casesTv.setText(confirm_cases);
-        holder.counterTv.setText(String.valueOf(counter ++ ));
+
 
         holder.state_cardView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -64,7 +71,41 @@ public class StateListAdapter extends RecyclerView.Adapter<StateListAdapter.MyVi
 
     @Override
     public int getItemCount() {
-        return arrayList.size();
+        return fullArraylist.size();
+    }
+
+    @Override
+    public Filter getFilter() {
+
+        return new Filter() {
+            @Override
+            protected FilterResults performFiltering(CharSequence charSequence) {
+                String charString = charSequence.toString();
+
+                if(charString.isEmpty()) {
+                    fullArraylist = arrayList;
+                } else {
+                    List<StateModels> filteredList = new ArrayList<>();
+                    for(StateModels row: arrayList) {
+                        if(row.getState_name().toLowerCase().contains(charString.toLowerCase())) {
+                            filteredList.add(row);
+                        }
+                    }
+                    fullArraylist = filteredList;
+                }
+
+                FilterResults filterResults = new FilterResults();
+                filterResults.values = fullArraylist;
+                return filterResults;
+
+            }
+
+            @Override
+            protected void publishResults(CharSequence constraint, FilterResults results) {
+                fullArraylist = (ArrayList<StateModels>) results.values;
+                notifyDataSetChanged();
+            }
+        };
     }
 
     class MyViewHolder extends RecyclerView.ViewHolder {

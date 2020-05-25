@@ -5,4 +5,11 @@
     <color name="colorAccent">#D81B60</color>
     <color name="toolbarTransparent">#00FFFFFF</color>
 
+
+
+    <color name="orange">#FF9C3C</color>
+    <color name="red">#F44336</color>
+    <color name="green">#16bc7d</color>
+
+
 </resources>
