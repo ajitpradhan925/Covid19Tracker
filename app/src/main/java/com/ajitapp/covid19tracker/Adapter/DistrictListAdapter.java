@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -14,18 +16,22 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.ajitapp.covid19tracker.DistWiseDetailsActivity;
 import com.ajitapp.covid19tracker.R;
+import com.ajitapp.covid19tracker.models.DistModel;
+import com.ajitapp.covid19tracker.models.StateModels;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
-public class DistrictListAdapter extends RecyclerView.Adapter<DistrictListAdapter.MyViewHolder> {
+public class DistrictListAdapter extends RecyclerView.Adapter<DistrictListAdapter.MyViewHolder> implements Filterable {
 
-    private ArrayList<HashMap<String, String>> arrayList;
+    private List<DistModel> arrayList;
+    private List<DistModel> fullArrayList;
     Context context;
-    int counter = 1;
-    public DistrictListAdapter(Context context, ArrayList<HashMap<String, String>> arrayList) {
+    public DistrictListAdapter(Context context, List<DistModel> arrayList) {
         this.arrayList = arrayList;
         this.context = context;
+        this.fullArrayList = arrayList;
     }
 
 
@@ -35,20 +41,19 @@ public class DistrictListAdapter extends RecyclerView.Adapter<DistrictListAdapte
         View view = LayoutInflater.from(context).inflate(R.layout.dist_list_item, parent, false);
 
         MyViewHolder myViewHolder = new MyViewHolder(view);
-
         return myViewHolder;
     }
 
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
 
-        final String state_name = arrayList.get(position).get("state_name");
-        final String confirm_cases = arrayList.get(position).get("confirm_cases");
-        final String dist_name = arrayList.get(position).get("dist_name");
-
+        final String state_name = fullArrayList.get(position).getState_name();
+        final String confirm_cases = fullArrayList.get(position).getConfirm_cases();
+        final String dist_name = fullArrayList.get(position).getDist_name();
+        holder.counterTv.setText(String.valueOf(position + 1));
         holder.dist_nameTv.setText(dist_name);
         holder.confirm_casesTv.setText(confirm_cases);
-        holder.counterTv.setText(String.valueOf(counter ++ ));
+
 
         holder.dist_cardView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -67,8 +72,45 @@ public class DistrictListAdapter extends RecyclerView.Adapter<DistrictListAdapte
 
     @Override
     public int getItemCount() {
-        return arrayList.size();
+        return fullArrayList.size();
     }
+
+
+
+    @Override
+    public Filter getFilter() {
+
+        return new Filter() {
+            @Override
+            protected FilterResults performFiltering(CharSequence charSequence) {
+                String charString = charSequence.toString();
+
+                if(charString.isEmpty()) {
+                    fullArrayList = arrayList;
+                } else {
+                    List<DistModel> filteredList = new ArrayList<>();
+                    for(DistModel row: arrayList) {
+                        if(row.getDist_name().toLowerCase().contains(charString.toLowerCase())) {
+                            filteredList.add(row);
+                        }
+                    }
+                    fullArrayList = filteredList;
+                }
+
+                FilterResults filterResults = new FilterResults();
+                filterResults.values = fullArrayList;
+                return filterResults;
+
+            }
+
+            @Override
+            protected void publishResults(CharSequence constraint, FilterResults results) {
+                fullArrayList = (ArrayList<DistModel>) results.values;
+                notifyDataSetChanged();
+            }
+        };
+    }
+
 
     class MyViewHolder extends RecyclerView.ViewHolder {
         TextView dist_nameTv, confirm_casesTv, counterTv;
