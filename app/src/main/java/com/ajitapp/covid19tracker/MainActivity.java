@@ -1,11 +1,13 @@
 package com.ajitapp.covid19tracker;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
-
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.Menu;
@@ -14,210 +16,282 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import com.android.volley.AuthFailureError;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.RetryPolicy;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
-    private TextView daily_confirm_casesTv;
-    private TextView total_confirm_casesTv;
+    TextView increased_confirm, confirm_no;
+    TextView  active_no;
+    TextView increased_recover, recover_no;
+    TextView increased_death, death_no;
+    TextView lastUpdate;
+    Toolbar toolbar;
+    CardView card, card2, card3, card4;
 
-    private TextView total_active_casesTv;
-
-    private TextView daily_recover_casesTv;
-    private TextView total_recover_casesTv;
-
-    private TextView daily_death_casesTv;
-    private TextView total_death_casesTv;
-
-    private TextView updateDateAndTimeTv;
-
-    private ImageView refresh_btn;
-
-    private CardView card1, card2, card3, card4;
-
-    private Toolbar toolbar;
-
-    private View shimmer_homepage;
+    ImageView refreshBtn;
+    View shimmer_layout;
+    private static final int PERMISSION_INTERNET = 1;
+    private static final int PERMISSION_ACCESS_NETWORK_STATE = 2;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
 
-        daily_confirm_casesTv = (TextView) findViewById(R.id.daily_confirm_cases);
-        total_confirm_casesTv = (TextView) findViewById(R.id.total_confirm_cases);
+        if (getIntent().getBooleanExtra("EXIT", false)) {
+            finish();
+        }
 
-        total_active_casesTv = (TextView) findViewById(R.id.total_active_cases);
-
-        daily_recover_casesTv = (TextView) findViewById(R.id.daily_recover_cases);
-        total_recover_casesTv = (TextView) findViewById(R.id.total_recover_cases);
-
-        daily_death_casesTv = (TextView) findViewById(R.id.daily_death_cases);
-        total_death_casesTv = (TextView) findViewById(R.id.total_death_cases);
-        updateDateAndTimeTv = (TextView) findViewById(R.id.update);
-
-        refresh_btn = (ImageView) findViewById(R.id.refresh_btn);
-
-        card1 = (CardView) findViewById(R.id.card1);
-        card2 = (CardView) findViewById(R.id.card2);
-        card3 = (CardView) findViewById(R.id.card3);
-        card4 = (CardView) findViewById(R.id.card4);
-
-        card1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                getStateListActivity();
-            }
-        });
-
-        card2.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                getStateListActivity();
-            }
-        });
-
-        card3.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                getStateListActivity();
-            }
-        });
-
-        card4.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                getStateListActivity();
-            }
-        });
-
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar =(Toolbar) findViewById(R.id.dist_details_toolbar);
 
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
-        refresh_btn = (ImageView) findViewById(R.id.refresh_btn);
-        refresh_btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                shimmer_homepage = (View) findViewById(R.id.shimmer_loading);
-                shimmer_homepage.setVisibility(View.VISIBLE);
-                getData();
+            // confirm
+            increased_confirm = findViewById(R.id.dist_daily_confirm_cases);
+            confirm_no = findViewById(R.id.dist_total_confirm_cases);
 
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(MainActivity.this, "Refreshed", Toast.LENGTH_SHORT).show();
-                    }
-                }, 3000);
-            }
-        });
+            // Active
+            active_no = findViewById(R.id.dist_total_active_cases);
 
-    getData();
-    }
+            // Recover
+            increased_recover = findViewById(R.id.dist_daily_recover_cases);
+            recover_no = findViewById(R.id.dist_total_recover_cases);
 
-    private void getData() {
-        String url = "https://api.covid19india.org/data.json";
+            // Death
+            increased_death = findViewById(R.id.dist_daily_death_cases);
+            death_no = findViewById(R.id.dist_total_death_cases);
 
-        shimmer_homepage = (View) findViewById(R.id.shimmer_loading);
-        shimmer_homepage.setVisibility(View.VISIBLE);
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null,
-                new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-
-                        try {
-                            JSONArray jsonArray = response.getJSONArray("statewise");
-
-                            JSONObject jsonObject = jsonArray.getJSONObject(0);
-
-                            // Confirm Cases
-                            String total_confirm_cases = jsonObject.getString("confirmed");
-                            String daily_confirm_cases = jsonObject.getString("deltaconfirmed");
-                            total_confirm_casesTv.setText(total_confirm_cases);
-                            daily_confirm_casesTv.setText("[+" +daily_confirm_cases+ "]");
-
-                            // Active Cases
-                            String total_active_cases = jsonObject.getString("active");
-                            total_active_casesTv.setText(total_active_cases);
-
-                            // Recover Cases
-                            String total_recover_cases = jsonObject.getString("recovered");
-                            String daily_recover_cases = jsonObject.getString("deltarecovered");
-                            total_recover_casesTv.setText(total_recover_cases);
-                            daily_recover_casesTv.setText("[+"+daily_recover_cases+ "]");
+            // Last update
+            lastUpdate = findViewById(R.id.update);
 
 
-                            // Death Cases
-                            String total_death_cases = jsonObject.getString("deaths");
-                            String daily_death_cases = jsonObject.getString("deltadeaths");
-                            total_death_casesTv.setText(total_death_cases);
-                            daily_death_casesTv.setText("[+"+daily_death_cases+"]");
 
-                            String updatetime = jsonObject.getString("lastupdatedtime");
-                            updateDateAndTimeTv.setText(updatetime);
+            card = findViewById(R.id.card);
+            card2 = findViewById(R.id.card2);
+            card3 = findViewById(R.id.card3);
+            card4 = findViewById(R.id.card4);
 
+            card.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    startActivity(new Intent(MainActivity.this, StateWiseData.class));
 
-                            new Handler().postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    shimmer_homepage.setVisibility(View.INVISIBLE);
-                                }
-                            }, 3000);
-
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                            shimmer_homepage.setVisibility(View.INVISIBLE);
-
-                        }
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Toast.makeText(MainActivity.this, error.getMessage(), Toast.LENGTH_SHORT).show();
-                        shimmer_homepage.setVisibility(View.INVISIBLE);
-
-                    }
                 }
-        );
+            });
+            card2.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    startActivity(new Intent(MainActivity.this, StateWiseData.class));
 
-        int socketTime = 70000;
-        RetryPolicy retryPolicy = new DefaultRetryPolicy(socketTime,
-                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
-                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT);
+                }
+            });
+            card3.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    startActivity(new Intent(MainActivity.this, StateWiseData.class));
 
-        jsonObjectRequest.setRetryPolicy(retryPolicy);
+                }
+            });
+            card4.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    startActivity(new Intent(MainActivity.this, StateWiseData.class));
 
-        RequestQueue requestQueue = Volley.newRequestQueue(MainActivity.this);
-        requestQueue.add(jsonObjectRequest);
+                }
+            });
 
+        requestPermission(Manifest.permission.INTERNET, PERMISSION_INTERNET);
+        requestPermission(Manifest.permission.ACCESS_NETWORK_STATE, PERMISSION_ACCESS_NETWORK_STATE);
+
+            refreshBtn = findViewById(R.id.refresh_btn);
+            refreshBtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    shimmer_layout = findViewById(R.id.shimmer_layout);
+                    shimmer_layout.setVisibility(View.VISIBLE);
+                    getData();
+                    new Handler().postDelayed(new Runnable() {
+                        public void run() {
+                            Toast.makeText(MainActivity.this, "Refreshed", Toast.LENGTH_SHORT).show();
+                        }
+                    }, 3000);
+
+                }
+            });
+
+
+            getData();
     }
 
-    private void getStateListActivity() {
-        startActivity(new Intent(MainActivity.this, StateListActivity.class));
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-
-        getMenuInflater().inflate(R.menu.toolbar_menu_home, menu);
-
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.toolbar_home, menu);
         return true;
     }
 
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        int id = item.getItemId();
+
+        if(id == R.id.search_by_state_dist) {
+            startActivity(new Intent(MainActivity.this, StateWiseData.class));
+        }
+        if(id == R.id.about_corona) {
+            startActivity(new Intent(MainActivity.this, CoronaActivity.class));
+        }
+        if(id == R.id.symptoms) {
+            startActivity(new Intent(MainActivity.this, SymptomsActivity.class));
+        }
+        if(id == R.id.search) {
+            startActivity(new Intent(MainActivity.this, SearchActivity.class));
+        }
+        if(id == R.id.about_me) {
+            startActivity(new Intent(MainActivity.this, AboutAppActivity.class));
+        }
         return super.onOptionsItemSelected(item);
     }
+
+
+
+
+
+    private void requestPermission(String permission, int requestId) {
+        if (ContextCompat.checkSelfPermission(MainActivity.this,
+                permission)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(MainActivity.this,
+                    new String[]{permission},
+                    requestId);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_INTERNET: {
+                if (grantResults.length <= 0
+                        || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                    requestPermission(Manifest.permission.INTERNET, PERMISSION_INTERNET);
+                }
+                return;
+            }
+            case PERMISSION_ACCESS_NETWORK_STATE: {
+                if (grantResults.length <= 0
+                        || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                    requestPermission(Manifest.permission.ACCESS_NETWORK_STATE, PERMISSION_ACCESS_NETWORK_STATE);
+                }
+                return;
+            }
+        }
+    }
+
+
+    private void getData() {
+        shimmer_layout = findViewById(R.id.shimmer_layout);
+        final String url = "https://api.covid19india.org/data.json";
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    JSONObject jsonObject = new JSONObject(response);
+                    JSONArray jsonArray = jsonObject.getJSONArray("statewise");
+
+
+                    JSONObject jsonObject1 = jsonArray.getJSONObject(0);
+
+                    String active = jsonObject1.getString("active");
+                    String confirmed = jsonObject1.getString("confirmed");
+                    String death = jsonObject1.getString("deaths");
+                    String recovered = jsonObject1.getString("recovered");
+
+                    String increase_confirm = jsonObject1.getString("deltaconfirmed");
+                    String increase_death = jsonObject1.getString("deltadeaths");
+                    String increase_recover = jsonObject1.getString("deltarecovered");
+                    String updated_time = jsonObject1.getString("lastupdatedtime");
+
+
+                    // confirm data
+                    confirm_no.setText(confirmed);
+                    increased_confirm.setText("[+"+increase_confirm+"]");
+
+                    // active data
+                    active_no.setText(active);
+
+                    // recover data
+                    recover_no.setText(recovered);
+                    increased_recover.setText("[+"+increase_recover+"]");
+
+                    // death data
+                    death_no.setText(death);
+                    increased_death.setText("[+"+increase_death+"]");
+                    lastUpdate.setText("Last updated time: "+updated_time);
+
+//                    Toast.makeText(MainActivity.this, jsonObject1.toString(), Toast.LENGTH_SHORT).show();
+
+
+
+
+                    new Handler().postDelayed(new Runnable() {
+                        public void run() {
+                            shimmer_layout.setVisibility(View.INVISIBLE);
+                        }
+                    }, 3000);
+
+
+
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+
+                    Toast.makeText(MainActivity.this, e.toString(), Toast.LENGTH_SHORT).show();
+                    shimmer_layout.setVisibility(View.INVISIBLE);
+
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                error.printStackTrace();
+
+                Toast.makeText(MainActivity.this, error.toString(), Toast.LENGTH_SHORT).show();
+                shimmer_layout.setVisibility(View.INVISIBLE);
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> params = new HashMap<>();
+                return super.getParams();
+            }
+        };
+
+        int socketTimeout = 30000;
+        RetryPolicy policy = new DefaultRetryPolicy(socketTimeout,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT);
+
+        stringRequest.setRetryPolicy(policy);
+
+        RequestQueue requestQueue = Volley.newRequestQueue(MainActivity.this);
+        requestQueue.add(stringRequest);
+    }
 }
+
+
